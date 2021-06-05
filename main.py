@@ -1,4 +1,5 @@
 from collections import defaultdict as ddict
+import numpy as np
 
 '''
 Creating main matrix
@@ -76,16 +77,18 @@ def get_Bs(constrain_str, i):
 '''
 Creating additional parameters Si and Ai
 '''
-def get_addidionalXB():
+def get_addidionalCj():
     hmc_range = range(0, hmc)
-    SA = [None]*hmc
-    AA = [None]*hmc
+    values_array = []
+    for i in hmc_range:
+        values_array.append(["x[" + str(i) + "]", 0])
     for i in hmc_range:
         # S values Array
-        SA[i] = ["S[" + str(i) + "]", 0]
+        values_array.append(["S[" + str(i) + "]", 0])
+    for i in hmc_range:
         # A values Array
-        AA[i] = ["A[" + str(i) + "]", 1]
-    return AA, SA
+        values_array.append(["A[" + str(i) + "]", 1])
+    return values_array
 
 '''
 Getting fucntion str like ('2x[1] + x[0]') and trying to get its parameters
@@ -135,29 +138,62 @@ Initialization method
 '''
 def init():
     fun = ''
-    #replacing whitespaces with no space
+    '''replacing whitespaces with no space'''
     fun = delete_whitespaces(function)
-    #geting parameters from given function
-    values_array = get_parameters(fun)
-    AA, SA = get_addidionalXB()
-    merge_arrays(values_array, SA)
-    merge_arrays(values_array, AA)
+    '''geting parameters from given function'''
+    values_array = []
+    values_array = get_addidionalCj()
     #print(values_array)
     sympleks = []
     sympleks = create_sympleks(sympleks)
+    #print(sympleks)
+    TwoPhaseMethod(sympleks, values_array)
+
+def TwoPhaseMethod(sympleks, values_array):
+    Initial_XB = []
+    hmc_range = range(0, hmc)
+    first_row_values = []
+
+    for i in hmc_range:
+        Initial_XB.append(["A[" + str(i) + "]", 1])
+
+    sympleks_len = len(sympleks)
+    sympleks_range = range(0, sympleks_len - hmc)
+    temp_array = []
+    for a in hmc_range:
+        for i in hmc_range:
+            for j in sympleks_range:
+                    temp_array.append(sympleks[j][i+1] * Initial_XB[i][1])
+        zj_array = []
+    
+        for j in sympleks_range:
+            first_val = float(temp_array[j])
+            second = float(temp_array[j + sympleks_len - hmc])
+            zj_array.append(first_val + second)
+            
+        biggest_value = np.max(zj_array)
+        biggest_value_index = zj_array.index(max(zj_array))
+        xb_div_xi = []
+    
+        for i in hmc_range:
+            xb_div_xi.append(float(sympleks[sympleks_len - hmc + i][1]) / float(sympleks[biggest_value_index][i+1]))
+    
+        smallest_value_index = xb_div_xi.index(min(xb_div_xi))
+        Initial_XB[smallest_value_index] = values_array[biggest_value_index]
+        sovling_element = float(sympleks[biggest_value_index][smallest_value_index + 1])
+    
+        for i in sympleks_range:
+            sympleks[i][smallest_value_index + 1] = float (sympleks[i][smallest_value_index + 1])/ sovling_element
+    print(Initial_XB)
     print(sympleks)
-
-
-
-
 
 function = '2a+ 1b'
 constrains = []
 constrains = ['1a + 1b >= 3','1a + 2b >= 4']
 sympleks = []
-#How many uknowns
+'''How many uknowns'''
 hmu = 2
-#How many constrains
+'''How many constrains'''
 hmc = 2
 
 init()
