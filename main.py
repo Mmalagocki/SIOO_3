@@ -1,10 +1,92 @@
 from collections import defaultdict as ddict
 import numpy as np
 import copy
+from tkinter import *
 
+
+
+########################## GUI #############################
+def main_programm():
+    Label(frame, text="Please provide required data").grid(row = 0)
+    
+    Label(frame, text="Function:").grid(row = 1)
+    function_input = Entry(frame, width = 20, cursor = 'hand2')
+    function_input.insert(0,'2a+ 1b')
+    function_input.grid(row=1 , column=1, pady = 10)
+    
+    Label(frame, text="How many uknowns:").grid(row = 2)
+    hmu_imput = Entry(frame, width = 20, cursor = 'hand2')
+    hmu_imput.insert(0,'2')
+    hmu_imput.grid(row = 2 , column=1, pady = 10)
+    
+    Label(frame, text="Pass the constrains(seperate them with ','):").grid(row = 3)
+    constrains_input = Entry(frame, width = 20, cursor = 'hand2')
+    constrains_input.insert(0,'1a + 1b >= 3,1a + 2b >= 4,')
+    constrains_input.grid(row = 3 , column = 1, pady = 10)
+
+    Button_submit = Button(frame, text = "Submit", command = lambda: set_and_init(function_input.get(), 
+                                                                               hmu_imput.get(), 
+                                                                               constrains_input.get(),
+                                                                               ))
+    Button_submit.grid(row=6 , column=1)
+
+def choose_main_condition(chosen_condition):
+    if (chosen_condition == "Two constrains"):
+        set_hmc(2)
+        main_programm()
+    elif(chosen_condition == "Three constrains") :
+        set_hmc(3)
+        main_programm()
+    elif(chosen_condition == "Four constrains") :
+        set_hmc(4)
+        main_programm()
+    else:
+        something_went_wront(chosen_condition)
+
+def something_went_wront(chosen_condition):
+    Label(frame, text="Sorry! Something went wrong. Here is the codition: " + chosen_condition).grid(row=0)
+
+def set_function(input_string):
+    global function
+    function = input_string
+
+def set_hmu(n):
+    global hmu
+    hmu = int(n)
+
+def set_hmc(n):
+    global hmc
+    hmc = int(n)
+
+def set_constrains(n):
+    global constrains
+    constrains = get_constrains(n)
+    print("constrains", constrains)
+
+def set_and_init(function_str, hmu_str, constrains_str):
+    set_function(function_str)
+    set_hmu(hmu_str)
+    set_constrains(constrains_str)
+    init()
+
+########### COMPUTING ########## 
 '''
-geting values from given fun
-Array of arrays: Array - Main matrix
+Geting values from given fun
+'''
+def get_constrains(constrains_str):
+    constrains_str = delete_whitespaces(constrains_str)
+    range_of_search = range(0, hmc)
+    last_found = 0
+    constrains_array = []
+    while constrains_str.find(',', last_found) != -1:
+        found_index = constrains_str.find(',', last_found)
+        constrain = constrains_str[last_found:found_index]
+        last_found =  found_index + 1
+        constrains_array.append(constrain)
+    return constrains_array
+    
+'''
+Geting values from given fun
 '''
 def get_values_from_initial_function():
     letter = 'a'
@@ -30,13 +112,14 @@ def get_values_from_initial_function():
     for i in range_of_search:
         values_array.append(["S[" + str(i+1) + "]",0])
     return values_array
+
 '''
 Creating main matrix
 Array of arrays: Array - Main matrix
 '''
 def create_sympleks(Array):
     hmc_range = range(0, hmc)
-
+    print("HOW MANY HMC?", hmc)
     for i in hmc_range:
         column = get_parameters(constrains[i])
         column_range = range(0,len(column))
@@ -357,13 +440,38 @@ def TwoPhaseMethod(sympleks, values_array):
     print(Initial_XB)
     print("cjzj_array =>",cjzj_array)
 
-function = '2a+ 1b' 
-constrains = []
-constrains = ['1a + 1b >= 3','1a + 2b >= 4']
-sympleks = []
-'''How many uknowns'''
-hmu = 2
-'''How many constrains'''
-hmc = 2
+########### DEBUGGING ########## 
+#function = '2a+ 1b' 
+#constrains = []
+#constrains = ['1a + 1b >= 3','1a + 2b >= 4']
+#sympleks = []
+#'''How many uknowns'''
+#hmu = 2
+#'''How many constrains'''
+#hmc = 2
 
-init()
+#init()
+
+########### SELECT MENU ###########
+root = Tk()
+root.geometry("1200x900")
+root.title("MM&MJ")
+
+frame = Frame(root)
+B = Button(root, text = "Submit", command = lambda: choose_main_condition(tkvarq.get()) )
+
+options = ["How many constrains",
+           "Two constrains",
+           "Three constrains",
+           "Four constrains",
+           ]
+
+## SELECT MENU
+tkvarq = StringVar(root)
+tkvarq.set(options[1])
+question_menu = OptionMenu(root, tkvarq, *options)
+question_menu.pack()
+B.pack()
+frame.pack()
+### DISPLAYS CHOSEN VERSION
+root.mainloop()
