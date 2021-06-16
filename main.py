@@ -3,6 +3,34 @@ import numpy as np
 import copy
 
 '''
+geting values from given fun
+Array of arrays: Array - Main matrix
+'''
+def get_values_from_initial_function():
+    letter = 'a'
+    str_fun = delete_whitespaces(function)
+    range_of_search = range(0, hmu)
+    last_found = 0
+    values_array = []
+    for i in range_of_search:
+        j = 0
+        while str_fun.find(chr(ord(letter) + i), last_found) != -1:
+            found_index = str_fun.find(chr(ord(letter) + i), last_found)
+            parameter_value = str_fun[last_found:found_index]
+            last_found =  found_index + 1
+            if j == 0:
+                values_array.append(["x[" + str(i+1) + "]", parameter_value])
+                parameter_value
+            else:
+                print("The given function was incorrect")
+                return 0
+            j+=1
+        if j == 0:
+            values_array.append(["x[" + str(i+1) + "]",0])
+    for i in range_of_search:
+        values_array.append(["S[" + str(i+1) + "]",0])
+    return values_array
+'''
 Creating main matrix
 Array of arrays: Array - Main matrix
 '''
@@ -234,7 +262,101 @@ def TwoPhaseMethod(sympleks, values_array):
         print("After changing values => ", sympleks)
         print(Initial_XB)
 
-        ''' Second phase '''
+    ''' Second phase '''
+    print("Moving to the second phase")
+    values_array = []
+    values_array = get_values_from_initial_function()
+    Initial_XB = get_parameters(function)
+    cjzj_array = [1]
+    max_value = max(cjzj_array)
+    while( max_value > 0):
+        sympleks_len = len(sympleks) - hmc
+        sympleks_range = range(0, sympleks_len )
+        column_values = []
+        for j in sympleks_range:
+            temp_array = []
+            for i in hmc_range:
+                temp_array.append(float(float(sympleks[j][i+1]) * float(Initial_XB[i][1])))
+            temp_len = len(temp_array)
+            temp_range = range(0, temp_len )
+            total = 0
+            for i in temp_range:
+                total = total + temp_array[i]
+            column_values.append(total)
+        cjzj_array = []
+        cj_len = len(values_array)
+        cj_range = range(0, cj_len)
+        for i in cj_range:
+            cjzj_array.append(float(column_values[i]) - float(values_array[i][1]) )
+        biggest_value = np.max(cjzj_array)
+        biggest_value_column = cjzj_array.index(max(cjzj_array))
+        xb_div_xi = []
+        if(max(cjzj_array) <= 0):
+            print("********** I HAVE FINISHED CALCULATING **********")
+            print("After changing values => ", sympleks)
+            print(Initial_XB)
+            print("cjzj_array =>",cjzj_array)
+            return Initial_XB
+        for i in hmc_range:
+            xb_div_xi_reulst = float(sympleks[sympleks_len + i][1]) / float(sympleks[biggest_value_column][i+1])
+            if(xb_div_xi_reulst > 0):
+                xb_div_xi.append(xb_div_xi_reulst)
+            else:
+                #do nothing
+                continue
+        smallest_value_row = xb_div_xi.index(min(xb_div_xi))
+        RE = float(sympleks[biggest_value_column][smallest_value_row + 1])
+        Initial_XB[smallest_value_row] = values_array[biggest_value_column]
+        temp_value = len(sympleks)
+        next_sympleks = copy.deepcopy(sympleks)
+        for j in hmc_range:
+            if (j == smallest_value_row):
+                next_sympleks[sympleks_len +j ][1] = float(sympleks[sympleks_len + j][1])/RE
+            else:
+                '''
+                OE - Old element
+                RE - Resolving element
+                KRE - Key row element
+                KCE - Key column element 
+                NE - New element
+                '''
+                OE = float (sympleks[sympleks_len + j][1])
+                KRE = float(sympleks[sympleks_len + smallest_value_row][1])
+                KCE = float(sympleks[biggest_value_column][j + 1])
+                NE = OE - (KCE * KRE)/ RE
+                next_sympleks[sympleks_len + j][1] =float(NE)
+
+            for i in sympleks_range:
+                '''
+                OE - Old element
+                RE - Resolving element
+                KRE - Key row element
+                KCE - Key column element 
+                NE - New element
+                '''
+
+                ''' For the RE row'''
+                if (j == smallest_value_row):
+                    next_sympleks[i][j + 1] = float (sympleks[i][j + 1])/ RE
+                else:
+                    '''For the rest of the table'''
+                    OE = float (sympleks[i][j + 1])
+                    KRE = float(sympleks[i][smallest_value_row + 1])
+                    KCE = float(sympleks[biggest_value_column][j + 1])
+                    NE = OE - (KCE * KRE)/ RE
+                    next_sympleks[i][j + 1] = float(NE)
+
+
+        sympleks = copy.copy(next_sympleks)
+        
+        print("After changing values => ", sympleks)
+        print(Initial_XB)
+        print("cjzj_array =>",cjzj_array)
+        max_value = np.max(cjzj_array)
+    print("After changing values => ", sympleks)
+    print(Initial_XB)
+    print("cjzj_array =>",cjzj_array)
+
 function = '2a+ 1b' 
 constrains = []
 constrains = ['1a + 1b >= 3','1a + 2b >= 4']
