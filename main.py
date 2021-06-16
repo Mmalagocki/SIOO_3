@@ -1,5 +1,6 @@
 from collections import defaultdict as ddict
 import numpy as np
+import copy
 
 '''
 Creating main matrix
@@ -10,19 +11,16 @@ def create_sympleks(Array):
 
     for i in hmc_range:
         column = get_parameters(constrains[i])
-        #print("column => ", column)
         column_range = range(0,len(column))
         for i in column_range:
             Array.append(column[i])
-    #print("unpacked =>", Array)
-    ''' Stolen from stack'''
+
     group = ddict(list)
 
     for xi, value in Array:
         group[xi].append(value)
     Array = [[xi, *values] for xis, values in group.items()]
 
-    ''''''
     for i in hmc_range:
         column = ["S[" + str(i) + "]"]
         for k in hmc_range:
@@ -97,7 +95,6 @@ string: str_fun - function string
 '''
 def get_parameters(str_fun):
     letter = 'a'
-    #chr(ord(letter) + i)
     str_fun = delete_whitespaces(str_fun)
     range_of_search = range(0, hmu)
     last_found = 0
@@ -106,23 +103,19 @@ def get_parameters(str_fun):
         j = 0
         while str_fun.find(chr(ord(letter) + i), last_found) != -1:
             found_index = str_fun.find(chr(ord(letter) + i), last_found)
-            #print('found index =>', found_index)
             parameter_value = str_fun[last_found:found_index]
-            #print('parameter_value =>', parameter_value)
             last_found =  found_index + 1
-            #print('last_found =>', last_found)
             if j == 0:
-                values_array.append(["x[" + str(i) + "]", parameter_value])
-
+                values_array.append(["x[" + str(i+1) + "]", parameter_value])
                 parameter_value
             else:
                 print("The given function was incorrect")
                 return 0
             j+=1
         if j == 0:
-            values_array.append(["x[" + str(i) + "]",0])
+            values_array.append(["x[" + str(i+1) + "]",0])
     return values_array
-    #str_fun.find("")
+
 
 '''
 Deletes whitespaces
@@ -143,10 +136,8 @@ def init():
     '''geting parameters from given function'''
     values_array = []
     values_array = get_addidionalCj()
-    #print(values_array)
     sympleks = []
     sympleks = create_sympleks(sympleks)
-    #print(sympleks)
     TwoPhaseMethod(sympleks, values_array)
 
 def TwoPhaseMethod(sympleks, values_array):
@@ -157,37 +148,90 @@ def TwoPhaseMethod(sympleks, values_array):
     for i in hmc_range:
         Initial_XB.append(["A[" + str(i) + "]", 1])
 
-    sympleks_len = len(sympleks)
-    sympleks_range = range(0, sympleks_len - hmc)
-    temp_array = []
-    for a in hmc_range:
-        for i in hmc_range:
-            for j in sympleks_range:
-                    temp_array.append(sympleks[j][i+1] * Initial_XB[i][1])
-        zj_array = []
-    
-        for j in sympleks_range:
-            first_val = float(temp_array[j])
-            second = float(temp_array[j + sympleks_len - hmc])
-            zj_array.append(first_val + second)
-            
-        biggest_value = np.max(zj_array)
-        biggest_value_index = zj_array.index(max(zj_array))
-        xb_div_xi = []
-    
-        for i in hmc_range:
-            xb_div_xi.append(float(sympleks[sympleks_len - hmc + i][1]) / float(sympleks[biggest_value_index][i+1]))
-    
-        smallest_value_index = xb_div_xi.index(min(xb_div_xi))
-        Initial_XB[smallest_value_index] = values_array[biggest_value_index]
-        sovling_element = float(sympleks[biggest_value_index][smallest_value_index + 1])
-    
-        for i in sympleks_range:
-            sympleks[i][smallest_value_index + 1] = float (sympleks[i][smallest_value_index + 1])/ sovling_element
-    print(Initial_XB)
-    print(sympleks)
+        ''' First phase '''
 
-function = '2a+ 1b'
+    for a in hmc_range:
+        sympleks_len = len(sympleks) - hmc
+        sympleks_range = range(0, sympleks_len )
+        column_values = []
+        for j in sympleks_range:
+            temp_array = []
+            for i in hmc_range:
+                temp_array.append(float(float(sympleks[j][i+1]) * Initial_XB[i][1]))
+            temp_len = len(temp_array)
+            temp_range = range(0, temp_len )
+            total = 0
+            for i in temp_range:
+                total = total + temp_array[i]
+            column_values.append(total)
+        cjzj_array = []
+        cj_len = len(values_array)
+        cj_range = range(0, cj_len)
+        for i in cj_range:
+            cjzj_array.append(float(column_values[i]) - float(values_array[i][1]) )
+        biggest_value = np.max(cjzj_array)
+        biggest_value_column = cjzj_array.index(max(cjzj_array))
+        xb_div_xi = []
+        for i in hmc_range:
+            xb_div_xi_reulst = float(sympleks[sympleks_len + i][1]) / float(sympleks[biggest_value_column][i+1])
+            xb_div_xi.append(xb_div_xi_reulst)
+        smallest_value_row = xb_div_xi.index(min(xb_div_xi))
+        RE = float(sympleks[biggest_value_column][smallest_value_row + 1])
+        for i in sympleks_range:
+            if (Initial_XB[smallest_value_row][0] == sympleks[i][0]):
+                sympleks.pop(i) 
+                values_array.pop(i) 
+
+        sympleks_range = range(0, sympleks_len -1)
+        sympleks_len = len(sympleks) - hmc
+        Initial_XB[smallest_value_row] = values_array[biggest_value_column]
+        temp_value = len(sympleks)
+        next_sympleks = copy.deepcopy(sympleks)
+        for j in hmc_range:
+            if (j == smallest_value_row):
+                next_sympleks[sympleks_len +j ][1] = float(sympleks[sympleks_len + j][1])/RE
+            else:
+                '''
+                OE - Old element
+                RE - Resolving element
+                KRE - Key row element
+                KCE - Key column element 
+                NE - New element
+                '''
+                OE = float (sympleks[sympleks_len + j][1])
+                KRE = float(sympleks[sympleks_len + smallest_value_row][1])
+                KCE = float(sympleks[biggest_value_column][j + 1])
+                NE = OE - (KCE * KRE)/ RE
+                next_sympleks[sympleks_len + j][1] =float(NE)
+
+            for i in sympleks_range:
+                '''
+                OE - Old element
+                RE - Resolving element
+                KRE - Key row element
+                KCE - Key column element 
+                NE - New element
+                '''
+
+                ''' For the RE row'''
+                if (j == smallest_value_row):
+                    next_sympleks[i][j + 1] = float (sympleks[i][j + 1])/ RE
+                else:
+                    '''For the rest of the table'''
+                    OE = float (sympleks[i][j + 1])
+                    KRE = float(sympleks[i][smallest_value_row + 1])
+                    KCE = float(sympleks[biggest_value_column][j + 1])
+                    NE = OE - (KCE * KRE)/ RE
+                    next_sympleks[i][j + 1] = float(NE)
+          
+
+        sympleks = copy.copy(next_sympleks)
+        print("After changing values => ", sympleks)
+        print(Initial_XB)
+
+        ''' Second phase '''
+
+function = '2a+ 1b' 
 constrains = []
 constrains = ['1a + 1b >= 3','1a + 2b >= 4']
 sympleks = []
