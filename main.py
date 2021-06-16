@@ -20,7 +20,12 @@ def create_sympleks(Array):
     for xi, value in Array:
         group[xi].append(value)
     Array = [[xi, *values] for xis, values in group.items()]
-
+    Array_len = len(Array)
+    Array_range = range(0, Array_len)
+    
+    for i in Array_range:
+        string = "x[" + str(i) + "]"
+        Array[i][0] = string
     for i in hmc_range:
         column = ["S[" + str(i) + "]"]
         for k in hmc_range:
@@ -230,7 +235,6 @@ def TwoPhaseMethod(sympleks, values_array):
         print(Initial_XB)
 
         ''' Second phase '''
-
 function = '2a+ 1b' 
 constrains = []
 constrains = ['1a + 1b >= 3','1a + 2b >= 4']
